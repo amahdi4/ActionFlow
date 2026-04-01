@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(PYTHONPATH=src python*)",
+      "Bash(ruff *)",
+      "Bash(pip install *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=\"$CLAUDE_FILE_PATH\"; if [[ \"$file\" == *.py ]]; then ruff check --fix \"$file\" 2>/dev/null || true; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

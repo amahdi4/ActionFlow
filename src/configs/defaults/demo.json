@@ -1,0 +1,67 @@
+{
+  "project": {
+    "name": "ActionFlow",
+    "output_dir": "outputs",
+    "seed": 42
+  },
+  "runtime": {
+    "device": "auto",
+    "num_workers": 2,
+    "mixed_precision": false,
+    "log_level": "INFO"
+  },
+  "data": {
+    "dataset_name": "ucf101",
+    "dataset_root": "data/UCF101",
+    "split": "split_1",
+    "clip_length": 10,
+    "frame_stride": 2,
+    "resize_height": 224,
+    "resize_width": 224,
+    "class_names": [
+      "running",
+      "walking",
+      "jumping",
+      "falling"
+    ],
+    "cache_dir": "data/cache"
+  },
+  "flow": {
+    "backend": "farneback",
+    "representation": "stacked_flow",
+    "precompute": false,
+    "cache_dir": "data/cache/flow",
+    "params": {}
+  },
+  "model": {
+    "architecture": "resnet18_flow",
+    "num_classes": 4,
+    "input_channels": 20,
+    "pretrained": false,
+    "checkpoint": null
+  },
+  "training": {
+    "batch_size": 1,
+    "epochs": 1,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001
+  },
+  "evaluation": {
+    "benchmark_batch_size": 1,
+    "warmup_steps": 3,
+    "timed_steps": 10,
+    "measure_memory": false
+  },
+  "demo": {
+    "host": "127.0.0.1",
+    "port": 7860,
+    "share": false,
+    "title": "ActionFlow Demo",
+    "enabled_backends": [
+      "farneback",
+      "lucas_kanade",
+      "raft"
+    ],
+    "live_frame_interval_ms": 100
+  }
+}

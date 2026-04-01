@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "actionflow"
+version = "0.1.0"
+description = "Motion-estimation-first action recognition application."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "gradio>=5.0",
+  "matplotlib>=3.8",
+  "numpy>=1.26",
+  "opencv-python>=4.9",
+  "pandas>=2.2",
+  "PyYAML>=6.0",
+  "seaborn>=0.13",
+]
+
+[project.optional-dependencies]
+training = [
+  "torch>=2.2",
+  "torchvision>=0.17",
+]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.11",
+]
+
+[project.scripts]
+actionflow = "scripts.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
