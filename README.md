@@ -1,108 +1,71 @@
 # ActionFlow
 
-ActionFlow is a Python application for human action recognition driven by motion estimation.
+ActionFlow is a notebook-first KTH Actions project for optical-flow-based human action recognition. The main thing to run is `ActionFlow.ipynb`, which walks through the full pipeline top to bottom:
 
-Phase 1 establishes the project skeleton:
+1. configuration
+2. cache-aware frame extraction
+3. dense Farneback optical flow
+4. dataset loading
+5. ResNet18 model construction
+6. training
+7. evaluation
+8. inline visualizations
 
-- modular package structure under `src/`
-- config loading and default profiles
-- device selection for `cuda`, `mps`, and `cpu`
-- base interfaces for motion estimators, motion representations, and classifiers
-- a dry-run pipeline for wiring validation
-- a Gradio web UI scaffold with upload and webcam modes
+The notebook is written so a reader can understand the project just by reading it. Heavy reusable pieces stay in a few Python modules:
 
-## Planned pipeline
-
-1. Read a video clip or webcam frames.
-2. Compute motion with a selected backend.
-3. Convert motion into a model-ready representation.
-4. Run a classifier.
-5. Show the predicted action and motion visualization.
-
-## Environment
-
-Recommended Python version: `3.11`.
-
-The project is designed to work across:
-
-- Windows or Linux with CUDA for training and heavy experiments
-- macOS with `mps` when available
-- CPU-only fallback for testing
+- `src/actionflow/models/resnet_flow.py`
+- `src/actionflow/training/trainer.py`
+- `src/actionflow/training/metrics.py`
 
 ## Install
 
-Create a virtual environment and install the package in editable mode:
-
 ```bash
-python3.11 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
-pip install -e '.[dev]'
+pip install -e '.[dev,notebook]'
 ```
 
-Install PyTorch using the wheel that matches your machine:
+## Data Layout
 
-- Windows PC with NVIDIA GPU: install CUDA-enabled `torch` and `torchvision`
-- macOS: install the standard macOS wheels with MPS support where available
+The notebook uses `download_kth.sh` to populate the canonical raw-data location:
 
-## Launch
+```text
+data/kth/raw/{class}/*.avi
+```
 
-The canonical user-facing entrypoint is the installed `actionflow` command.
+If videos are already present there, the script skips them. If a class is missing, the script downloads only the missing class archive.
 
-Launch the web app:
+Prepared artifacts are written to:
+
+```text
+data/kth/frames/{class}/{video_name}/frame_XXXXX.png
+data/kth/flow/{class}/{video_name}/flow_XXXXX.npy
+```
+
+## Run
+
+Open and run `ActionFlow.ipynb` from top to bottom.
+
+The notebook is cache-aware:
+
+- it runs `download_kth.sh` first, which skips already downloaded classes
+- if frames already exist, extraction is skipped
+- if optical-flow files already exist, flow computation is skipped
+
+By default the notebook uses a CPU-friendly per-class subset so it is practical on a laptop. Increase those limits in the config cell for a larger experiment.
+
+## Secondary Utilities
+
+The CLI and tests still exist, but they are secondary now:
 
 ```bash
-actionflow launch
+actionflow smoke-test
+actionflow prepare-data
+actionflow train --mode flow --subset 10 --epochs 2
+actionflow evaluate --checkpoint outputs/best_flow.pt --mode flow
 ```
-
-The launch command defaults to the `demo` profile. Use `--device` to force a runtime target during manual testing:
 
 ```bash
-actionflow --device cpu launch
-actionflow --device mps launch
+PYTHONPATH=src python -m pytest tests/ -v
+ruff check src/ tests/
 ```
-
-## Manual Testing
-
-Inspect the resolved runtime environment:
-
-```bash
-actionflow check-env
-```
-
-Run a dry wiring check without opening the UI:
-
-```bash
-actionflow dry-run
-```
-
-Print the resolved configuration:
-
-```bash
-actionflow show-config
-```
-
-The demo opens at `http://127.0.0.1:7860` by default.
-
-Inside the app:
-
-- `Live Capture Lab` streams webcam frames continuously and overlays motion feedback in real time.
-- `Clip Review` inspects uploaded videos and summarizes motion strength and scene quality.
-- `How To Collect Better Data` gives a short checklist for recording useful action-recognition samples.
-
-## Launch Behavior
-
-`actionflow launch` is the real app entrypoint for manual use.
-
-- `launch` opens a live motion-analysis workbench with the `demo` profile by default.
-- `dry-run` validates configuration, device selection, and component wiring without starting the UI.
-- `check-env` shows whether the runtime can use `cuda`, `mps`, or only `cpu`.
-
-If you are working directly from source without installing the package, the module form still works as a development fallback:
-
-```bash
-PYTHONPATH=src python3 -m scripts.cli launch
-```
-
-## Current status
-
-The repository currently contains scaffolding and interface contracts. Optical flow, training, and live prediction logic will be implemented in later phases.
