@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+import json
 from pathlib import Path
 
 import torch
@@ -40,7 +41,8 @@ class Trainer:
 
     def train(self) -> dict[str, list[float]]:
         """Run the training loop and return the recorded history."""
-        checkpoint_path = Path(self.config.output_dir) / f"best_{self.config.mode}.pt"
+        output_dir = Path(self.config.output_dir)
+        checkpoint_path = output_dir / f"best_{self.config.mode}.pt"
         for epoch in range(1, self.config.epochs + 1):
             train_loss, train_acc = self.train_one_epoch(epoch)
             val_loss, val_acc = self.validate()
@@ -62,6 +64,9 @@ class Trainer:
                 f"val_loss={val_loss:.4f} val_acc={val_acc:.4f}"
             )
 
+        output_dir.mkdir(parents=True, exist_ok=True)
+        with (output_dir / f"history_{self.config.mode}.json").open("w", encoding="utf-8") as handle:
+            json.dump(self.history, handle, indent=2)
         return self.history
 
     def train_one_epoch(self, epoch: int) -> tuple[float, float]:

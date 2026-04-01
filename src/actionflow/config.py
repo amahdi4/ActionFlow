@@ -51,11 +51,11 @@ class ActionFlowConfig:
             raise ValueError("resize must be a tuple of two positive integers.")
         if len(self.class_names) != self.num_classes:
             raise ValueError("num_classes must match len(class_names).")
-        if self.num_workers != 0:
-            raise ValueError("ActionFlow defaults to CPU-safe execution and requires num_workers=0.")
+        if self.num_workers < 0:
+            raise ValueError("num_workers must be non-negative.")
         if self.device == "":
             raise ValueError("device must not be empty.")
 
         self.input_channels = self.clip_length * 2 if self.mode == "flow" else 3
-        self.data_root = str(Path(self.data_root))
-        self.output_dir = str(Path(self.output_dir))
+        self.data_root = Path(self.data_root).as_posix()
+        self.output_dir = Path(self.output_dir).as_posix()

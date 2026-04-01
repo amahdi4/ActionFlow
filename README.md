@@ -1,71 +1,53 @@
 # ActionFlow
 
-ActionFlow is a notebook-first KTH Actions project for optical-flow-based human action recognition. The main thing to run is `ActionFlow.ipynb`, which walks through the full pipeline top to bottom:
+ActionFlow is a notebook-first project for human action recognition on the KTH Actions dataset.
+
+The source of truth is [`ActionFlow.ipynb`](ActionFlow.ipynb). The notebook explains and runs the full workflow:
 
 1. configuration
-2. cache-aware frame extraction
-3. dense Farneback optical flow
-4. dataset loading
-5. ResNet18 model construction
-6. training
+2. dataset check / download
+3. frame extraction
+4. dense Farneback optical flow
+5. dataset split
+6. ResNet-18 training
 7. evaluation
-8. inline visualizations
+8. comparison plots and saved artifacts
 
-The notebook is written so a reader can understand the project just by reading it. Heavy reusable pieces stay in a few Python modules:
+The Python package under `src/actionflow/` exists to support the notebook. If the notebook and helper modules ever drift, follow the notebook.
 
-- `src/actionflow/models/resnet_flow.py`
-- `src/actionflow/training/trainer.py`
-- `src/actionflow/training/metrics.py`
+## What It Produces
 
-## Install
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e '.[dev,notebook]'
-```
-
-## Data Layout
-
-The notebook uses `download_kth.sh` to populate the canonical raw-data location:
+Running the notebook writes artifacts such as:
 
 ```text
 data/kth/raw/{class}/*.avi
-```
-
-If videos are already present there, the script skips them. If a class is missing, the script downloads only the missing class archive.
-
-Prepared artifacts are written to:
-
-```text
 data/kth/frames/{class}/{video_name}/frame_XXXXX.png
 data/kth/flow/{class}/{video_name}/flow_XXXXX.npy
+
+outputs/flow/best_flow.pt
+outputs/flow/metrics_flow.json
+outputs/rgb/best_rgb.pt
+outputs/rgb/metrics_rgb.json
+outputs/comparison.json
 ```
 
-## Run
+## How To Run
 
-Open and run `ActionFlow.ipynb` from top to bottom.
+Create a virtual environment, install the project with notebook dependencies, then open the notebook and run it top to bottom.
 
-The notebook is cache-aware:
+Windows PowerShell:
 
-- it runs `download_kth.sh` first, which skips already downloaded classes
-- if frames already exist, extraction is skipped
-- if optical-flow files already exist, flow computation is skipped
-
-By default the notebook uses a CPU-friendly per-class subset so it is practical on a laptop. Increase those limits in the config cell for a larger experiment.
-
-## Secondary Utilities
-
-The CLI and tests still exist, but they are secondary now:
-
-```bash
-actionflow smoke-test
-actionflow prepare-data
-actionflow train --mode flow --subset 10 --epochs 2
-actionflow evaluate --checkpoint outputs/best_flow.pt --mode flow
+```powershell
+py -m venv .venv
+.venv\Scripts\activate
+python -m pip install -e ".[notebook]"
+python -m notebook ActionFlow.ipynb
 ```
 
-```bash
-PYTHONPATH=src python -m pytest tests/ -v
-ruff check src/ tests/
-```
+If you use VS Code, open [`ActionFlow.ipynb`](ActionFlow.ipynb) and select the project kernel or interpreter for `.venv`.
+
+## Notes
+
+- The notebook is cache-aware. If raw videos, frames, or flow files already exist, they are reused.
+- Training uses CUDA automatically if your notebook kernel has a CUDA-enabled PyTorch install. Otherwise it falls back to CPU.
+- The CLI and tests are secondary utilities, not the primary workflow.
