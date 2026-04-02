@@ -110,7 +110,12 @@ class FlowClipDataset(Dataset[tuple[torch.Tensor, int]]):
     ) -> None:
         self.video_dirs = [Path(path) for path in video_dirs]
         self.labels = labels
-        self.config = config
+        # Snapshot the shape/sampling config so later notebook mutations do not
+        # retroactively change how already-built datasets decode samples.
+        self.resize = tuple(config.resize)
+        self.clip_length = int(config.clip_length)
+        self.frame_stride = int(config.frame_stride)
+        self.input_channels = self.clip_length * 2
         self.train = train
         self.synthetic = synthetic
         self.synthetic_samples = synthetic_samples
@@ -121,11 +126,11 @@ class FlowClipDataset(Dataset[tuple[torch.Tensor, int]]):
     def __getitem__(self, index: int) -> tuple[torch.Tensor, int]:
         label = self.labels[index % len(self.labels)]
         if self.synthetic:
-            sample = torch.randn(self.config.input_channels, *self.config.resize, dtype=torch.float32)
+            sample = torch.randn(self.input_channels, *self.resize, dtype=torch.float32)
             return sample, label
 
         flow_paths = sorted(self.video_dirs[index].glob("flow_*.npy"))
-        clip_indices = select_clip_indices(len(flow_paths), self.config.clip_length, self.config.frame_stride, self.train)
+        clip_indices = select_clip_indices(len(flow_paths), self.clip_length, self.frame_stride, self.train)
         flows = [np.load(flow_paths[position]).astype(np.float32, copy=False) for position in clip_indices]
         flow_clip = np.stack(flows, axis=0)
         if self.train and random.random() < 0.5:
@@ -133,7 +138,7 @@ class FlowClipDataset(Dataset[tuple[torch.Tensor, int]]):
             flow_clip[..., 0] *= -1.0
 
         flow_clip = np.clip(flow_clip / FLOW_SCALE, -1.0, 1.0)
-        target_h, target_w = self.config.resize
+        target_h, target_w = self.resize
         clip_h, clip_w = flow_clip.shape[1], flow_clip.shape[2]
         if clip_h != target_h or clip_w != target_w:
             scale_y, scale_x = target_h / clip_h, target_w / clip_w
@@ -144,7 +149,7 @@ class FlowClipDataset(Dataset[tuple[torch.Tensor, int]]):
             resized[..., 0] *= scale_x
             resized[..., 1] *= scale_y
             flow_clip = resized
-        tensor = torch.from_numpy(flow_clip.transpose(0, 3, 1, 2).reshape(self.config.input_channels, *self.config.resize))
+        tensor = torch.from_numpy(flow_clip.transpose(0, 3, 1, 2).reshape(self.input_channels, *self.resize))
         return tensor.float(), label
 
 
@@ -162,7 +167,9 @@ class RGBClipDataset(Dataset[tuple[torch.Tensor, int]]):
     ) -> None:
         self.video_dirs = [Path(path) for path in video_dirs]
         self.labels = labels
-        self.config = config
+        self.resize = tuple(config.resize)
+        self.clip_length = int(config.clip_length)
+        self.frame_stride = int(config.frame_stride)
         self.train = train
         self.synthetic = synthetic
         self.synthetic_samples = synthetic_samples
@@ -173,17 +180,17 @@ class RGBClipDataset(Dataset[tuple[torch.Tensor, int]]):
     def __getitem__(self, index: int) -> tuple[torch.Tensor, int]:
         label = self.labels[index % len(self.labels)]
         if self.synthetic:
-            sample = torch.randn(3, *self.config.resize, dtype=torch.float32)
+            sample = torch.randn(3, *self.resize, dtype=torch.float32)
             return sample, label
 
         frame_paths = sorted(self.video_dirs[index].glob("frame_*.png"))
-        clip_indices = select_clip_indices(len(frame_paths), self.config.clip_length, self.config.frame_stride, self.train)
+        clip_indices = select_clip_indices(len(frame_paths), self.clip_length, self.frame_stride, self.train)
         center_index = clip_indices[len(clip_indices) // 2]
         frame = cv2.imread(str(frame_paths[center_index]), cv2.IMREAD_COLOR)
         if frame is None:
             raise FileNotFoundError(frame_paths[center_index])
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        target_h, target_w = self.config.resize
+        target_h, target_w = self.resize
         if frame.shape[0] != target_h or frame.shape[1] != target_w:
             frame = cv2.resize(frame, (target_w, target_h), interpolation=cv2.INTER_LINEAR)
         if self.train and random.random() < 0.5:
@@ -207,7 +214,9 @@ class TemporalAppearanceClipDataset(Dataset[tuple[torch.Tensor, int]]):
     ) -> None:
         self.video_dirs = [Path(path) for path in video_dirs]
         self.labels = labels
-        self.config = config
+        self.resize = tuple(config.resize)
+        self.clip_length = int(config.clip_length)
+        self.frame_stride = int(config.frame_stride)
         self.train = train
         self.synthetic = synthetic
         self.synthetic_samples = synthetic_samples
@@ -218,13 +227,13 @@ class TemporalAppearanceClipDataset(Dataset[tuple[torch.Tensor, int]]):
     def __getitem__(self, index: int) -> tuple[torch.Tensor, int]:
         label = self.labels[index % len(self.labels)]
         if self.synthetic:
-            sample = torch.randn(self.config.clip_length, *self.config.resize, dtype=torch.float32)
+            sample = torch.randn(self.clip_length, *self.resize, dtype=torch.float32)
             return sample, label
 
         frame_paths = sorted(self.video_dirs[index].glob("frame_*.png"))
-        clip_indices = select_clip_indices(len(frame_paths), self.config.clip_length, self.config.frame_stride, self.train)
+        clip_indices = select_clip_indices(len(frame_paths), self.clip_length, self.frame_stride, self.train)
 
-        target_h, target_w = self.config.resize
+        target_h, target_w = self.resize
         frames: list[np.ndarray] = []
         for position in clip_indices:
             frame = cv2.imread(str(frame_paths[position]), cv2.IMREAD_GRAYSCALE)
