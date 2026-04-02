@@ -9,7 +9,8 @@ The source of truth is [`ActionFlow.ipynb`](ActionFlow.ipynb). The notebook expl
 3. frame extraction
 4. dense Farneback optical flow
 5. dataset split
-6. ResNet-18 training
+6. three ResNet-18 experiments:
+   optical flow, single-frame appearance, and temporal appearance
 7. evaluation
 8. comparison plots and saved artifacts
 
@@ -26,8 +27,10 @@ data/kth/flow/{class}/{video_name}/flow_XXXXX.npy
 
 outputs/flow/best_flow.pt
 outputs/flow/metrics_flow.json
-outputs/rgb/best_rgb.pt
-outputs/rgb/metrics_rgb.json
+outputs/appearance_single/best_appearance_single.pt
+outputs/appearance_single/metrics_appearance_single.json
+outputs/appearance_temporal/best_appearance_temporal.pt
+outputs/appearance_temporal/metrics_appearance_temporal.json
 outputs/comparison.json
 ```
 

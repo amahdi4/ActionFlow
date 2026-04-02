@@ -7,6 +7,5 @@ __pycache__/
 *.egg-info/
 *.pyc
 
-data/
+/data/
 outputs/
-

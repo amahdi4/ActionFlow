@@ -17,7 +17,7 @@ from actionflow.data import (
     RGBClipDataset,
     compute_all_flow,
     extract_all_frames,
-    get_train_test_split,
+    get_train_val_test_split,
 )
 from actionflow.evaluation import evaluate_model
 from actionflow.models import build_resnet18_flow
@@ -175,14 +175,14 @@ def run_smoke_test(output_dir: str = "outputs/smoke") -> dict[str, object]:
 
 def _build_train_val_loaders(config: ActionFlowConfig) -> tuple[DataLoader, DataLoader]:
     """Create train and validation dataloaders for prepared KTH data."""
-    train_dirs, train_labels, test_dirs, test_labels = get_train_test_split(config.data_root, mode=config.mode)
+    train_dirs, train_labels, val_dirs, val_labels, _test_dirs, _test_labels = get_train_val_test_split(config.data_root, mode=config.mode)
     if config.subset is not None:
         train_dirs, train_labels = _limit_per_class(train_dirs, train_labels, config.subset)
-        test_dirs, test_labels = _limit_per_class(test_dirs, test_labels, config.subset)
+        val_dirs, val_labels = _limit_per_class(val_dirs, val_labels, config.subset)
 
     dataset_cls = FlowClipDataset if config.mode == "flow" else RGBClipDataset
     train_dataset = dataset_cls(train_dirs, train_labels, config=config, train=True)
-    test_dataset = dataset_cls(test_dirs, test_labels, config=config, train=False)
+    val_dataset = dataset_cls(val_dirs, val_labels, config=config, train=False)
 
     train_loader = DataLoader(
         train_dataset,
@@ -190,13 +190,13 @@ def _build_train_val_loaders(config: ActionFlowConfig) -> tuple[DataLoader, Data
         shuffle=True,
         num_workers=config.num_workers,
     )
-    test_loader = DataLoader(
-        test_dataset,
+    val_loader = DataLoader(
+        val_dataset,
         batch_size=config.batch_size,
         shuffle=False,
         num_workers=config.num_workers,
     )
-    return train_loader, test_loader
+    return train_loader, val_loader
 
 
 def _config_from_args(args: argparse.Namespace) -> ActionFlowConfig:
