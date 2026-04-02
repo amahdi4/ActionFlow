@@ -29,6 +29,20 @@ def test_rgb_mode_input_channels_are_derived() -> None:
     assert config.input_channels == 3
 
 
+def test_single_frame_mode_input_channels_are_derived() -> None:
+    """Single-frame appearance should reuse the RGB channel contract."""
+    config = ActionFlowConfig(mode="appearance_single", input_channels=99)
+
+    assert config.input_channels == 3
+
+
+def test_temporal_mode_input_channels_are_derived() -> None:
+    """Temporal appearance should map clip length to grayscale time channels."""
+    config = ActionFlowConfig(mode="appearance_temporal", clip_length=12, input_channels=99)
+
+    assert config.input_channels == 12
+
+
 def test_class_count_matches_class_names() -> None:
     """The configured number of classes should equal the class-name tuple length."""
     config = ActionFlowConfig()

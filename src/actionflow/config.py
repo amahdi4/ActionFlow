@@ -40,8 +40,11 @@ class ActionFlowConfig:
 
     def __post_init__(self) -> None:
         """Validate config values and normalize derived fields."""
-        if self.mode not in {"flow", "rgb"}:
-            msg = f"Unsupported mode: {self.mode!r}. Expected 'flow' or 'rgb'."
+        if self.mode not in {"flow", "rgb", "appearance_single", "appearance_temporal"}:
+            msg = (
+                f"Unsupported mode: {self.mode!r}. "
+                "Expected 'flow', 'rgb', 'appearance_single', or 'appearance_temporal'."
+            )
             raise ValueError(msg)
         if self.clip_length <= 0:
             raise ValueError("clip_length must be positive.")
@@ -56,6 +59,11 @@ class ActionFlowConfig:
         if self.device == "":
             raise ValueError("device must not be empty.")
 
-        self.input_channels = self.clip_length * 2 if self.mode == "flow" else 3
+        if self.mode == "flow":
+            self.input_channels = self.clip_length * 2
+        elif self.mode == "appearance_temporal":
+            self.input_channels = self.clip_length
+        else:
+            self.input_channels = 3
         self.data_root = Path(self.data_root).as_posix()
         self.output_dir = Path(self.output_dir).as_posix()

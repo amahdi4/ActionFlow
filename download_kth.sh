@@ -2,8 +2,10 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
-DATA_DIR="$ROOT_DIR/data/kth/raw"
+KTH_DIR="$ROOT_DIR/data/kth"
+DATA_DIR="$KTH_DIR/raw"
 BASE_URL="https://www.csc.kth.se/cvap/actions"
+SEQUENCES_FILE="$KTH_DIR/00sequences.txt"
 ACTIONS=("boxing" "handclapping" "handwaving" "jogging" "running" "walking")
 
 mkdir -p "$DATA_DIR"
@@ -23,5 +25,12 @@ for action in "${ACTIONS[@]}"; do
     echo "[EXTRACTING] $action.zip"
     unzip -q -o "$ZIP_FILE" -d "$AVI_DIR"
 done
+
+if [ -f "$SEQUENCES_FILE" ]; then
+    echo "[SKIP] 00sequences.txt already downloaded"
+else
+    echo "[DOWNLOADING] 00sequences.txt"
+    curl -fL --progress-bar -o "$SEQUENCES_FILE" "$BASE_URL/00sequences.txt"
+fi
 
 echo "Download complete."
